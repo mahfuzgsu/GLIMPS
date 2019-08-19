@@ -1,0 +1,44 @@
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+#LOAD THE MODEL
+model ReducedOutliersMILPmain.mod;
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 60'; #'bestobjstop 20';
+
+
+param flag;
+#SOLVE
+for {case in 1..5}
+{     display case;
+      reset data;
+      option randseed 0;
+     
+      data ("./inputMILP/reducedData_" & case & ".dat");
+      display p;
+      
+      solve;
+      display theta, T, X_true, X, outliervec, Z, f;
+      display _total_solve_elapsed_time;
+      display case, p > ("./outputMILP/reducedData_" & case & ".out");
+      display theta, T, X_true, X, outliervec, Z, f > ("./outputMILP/reducedData_" & case & ".out");
+      let flag:=1;
+      for { s in 1..r}
+      { 
+           if(abs(T[s]-theta[s])>0.05) then { 
+           let flag:=0;
+           break;
+           }
+      }
+      
+     if flag = 1 then print "Suceeded";  else print "Failed";     
+      
+}
+
+
+
+
+

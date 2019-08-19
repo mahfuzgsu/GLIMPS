@@ -1,0 +1,64 @@
+# THIS CODE IS FOR RUNNING MILP ON DATA OBTAINED AFTER APPLYING GREEDY APPROACH
+# IT USES THETA FOR EVALUATION, TOLERATES VERY SMALL GAP IN THETA (E.G., 1E-5)
+# TO MEASURE SUCCESS OF THIS APPROACH.
+
+
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+#LOAD THE MODEL
+#model ReducedOutliersMILPmain.mod;
+model NoisyMILPModel.mod; # if data has some noise....
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 60'; #'bestobjstop 20';
+
+
+param flag;
+#SOLVE
+for {ncase in 3..3} 
+{   
+    for {pcase in 7..7}
+    { 
+        for {case in 1..5}
+        {     
+              display ncase;
+              display pcase;
+              display case;
+              reset data;
+              option randseed 0;
+              data ("./inputMILP/Noise/reducedData_n_" & ncase & "_p_" & pcase & "_" & case & ".dat");
+              display p;
+      
+              solve;
+              display theta, T, X_true, X, outliervec, Z, f;
+              display _total_solve_elapsed_time;
+              #display W;
+              #display case, p > ("./outputMILP/reducedData_" & case & ".out");
+              #display theta, T, X_true, X, outliervec, Z, f > ("./outputMILP/reducedData_" & case & ".out");
+              let flag:=1;
+              
+              #We used .00001 for sigma=0, .001 for sigmal=1e-9, .01 for sigma=1e-3
+              for { s in 1..r}
+              { 
+                    if(abs(T[s]-theta[s])>0.01) then { 
+                        let flag:=0;
+                        break;
+                    }
+              }
+              if flag = 1 then {
+                  print "Suceeded"; 
+              }
+              else print "Failed";
+              print flag >> ("./outputMILP/EvalMetric_1/reducedData_n_" & ncase & "_p_" & pcase & ".out");
+         }
+         
+      }              
+}
+
+
+
+
+

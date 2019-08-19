@@ -1,0 +1,30 @@
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+option randseed 0;
+
+#LOAD THE MODEL
+model myexample1.mod;
+
+#LOAD THE DATA
+data myexample1.dat;
+
+#DISPLAY THE PROBLEM FORMULATION
+#expand z, Constraint;
+
+#CHANGE THE SOLVER (optional)
+option solver cplex;
+
+#SOLVE
+#objective f1;
+solve;
+
+#SHOW RESULTS
+#display U, theta, X_true, X, outliervec, Z, T, f;
+
+display U, theta, X_true, X, outliers, Z, T, f;
+#objective f2;
+#solve;
+#display theta, X_true, X, outliers, Z2, S, f2;
+

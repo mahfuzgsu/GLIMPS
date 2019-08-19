@@ -1,0 +1,104 @@
+# THIS CODE IS FOR RUNNING MILP ON DATA OBTAINED AFTER APPLYING GREEDY APPROACH
+# IT USES ORIGINAL OUTLIER VECTOR AND Z VECTOR FOR EVALUATION
+# WE NAMED THIS EVALUATION AS EVALUATION_METRIC_2
+
+
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+#LOAD THE MODEL
+#model ReducedOutliersMILPmain.mod; #Use this model if data has no noise;
+model NoisyMILPModel.mod; #Use this model if data has some noise....
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 60'; #'bestobjstop 20';
+
+
+param FP;
+param inliers;
+param ratio;
+param x_hat {1..D};
+param sigma {1..4}; 
+
+
+
+#SOLVE
+for {ncase in 4..4} 
+{   
+    for {pcase in 11..17}
+    { 
+        for {case in 1..50}
+        {     
+              
+              display ncase;
+              display pcase;
+              display case;
+              reset data;
+              option randseed 0;
+              data ("./inputMILP/Noise/Data2/reducedData_n_" & ncase & "_p_" & pcase & "_" & case & ".dat");
+              display p;
+      
+              solve;
+              display theta, T, X_true, X, outliervec, Z, f;
+              display _total_solve_elapsed_time;
+              
+              #display case, p > ("./outputMILP/reducedData_" & case & ".out");
+              #display theta, T, X_true, X, outliervec, Z, f > ("./outputMILP/reducedData_" & case & ".out");
+              
+              let FP :=0;
+              let inliers :=0;
+              for {i in 1..D}
+              {
+                  if(outliervec_original[i] = 0) then {
+                       let inliers := inliers + 1;
+                  }
+              
+              }
+              
+              
+              let sigma[1] := 0;
+              let sigma[2] := 1e-9;
+              let sigma[3] := 1e-3;
+              let sigma[4] :=1e-1;
+              
+              #Calculate estimated x called x_hat
+              #Use original subspace and estimated theta called T
+              
+              #for {i in 1..D}
+              #{ 
+              #     let x_hat[i] :=0;
+              #     for { j in 1..r}
+              #     {
+              #          let  x_hat[i] := x_hat[i]+U_Original[i,j]*T[j];             
+              #     }     
+              #}
+              
+              for { i in 1..d}
+              {
+                          
+                          #It determines false negative; inliers being treated as outliers
+                          
+                          if(outliervec[i] = 0 && Z[i] = 1) then { 
+                                 let FN :=FN+1; 
+                          }
+                          
+                          #It determines false positive; outliers beign treated as inliers..
+                          if(outliervec[i] = 1 && Z[i] = 0) then { 
+                                 let FP :=FP+1; 
+                          }      
+              
+              }
+              let ratio := (FP+FN)/inliers ;
+              display inliers, FP, FN, ratio;
+              print ratio >> ("./outputMILP/EvalMetric_2/reducedData_n_" & ncase & "_p_" & pcase & ".out");
+         }
+         
+      }              
+}
+
+
+
+
+

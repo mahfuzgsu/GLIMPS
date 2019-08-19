@@ -1,0 +1,6 @@
+data;
+
+param d := 100;
+param r := 5;
+param p :=0.40;
+param M :=1000;

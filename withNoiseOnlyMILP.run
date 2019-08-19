@@ -1,0 +1,126 @@
+# THIS CODE IS FOR RUNNING MILP ON ORIGINAL DATA
+# WE WILL USE THETA BASED EVALUATION (METRIC 1) AND MISSCLASSIFICATION BASED EVALUATION (METRIC 2)
+# WE WILL ALSO KEEP TRACK OF COMPUTATION TIME
+
+
+
+
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+#LOAD THE MODEL
+model OnlyMILPModel.mod; #Use this model if data has no noise;
+#model NoisyOnlyMILP.mod; #Use this model if data has some noise....
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 60'; #'bestobjstop 20';
+
+
+param FP;
+param FN;
+param inliers;
+param ratio;
+param sigma {1..4}; 
+param time1;  #Keep track of time;
+param time2;
+param norm_of_diff;
+param norm_theta_hat;
+param norm_theta_true;
+param metric_1_ratio;
+
+
+
+
+#SOLVE
+
+for {ncase in 1..1} 
+{   
+    for {pcase in 2..17}
+    { 
+        for {case in 1..50}
+        {     
+              
+              display ncase;
+              display pcase;
+              display case;
+              reset data;
+              option randseed 0;
+              data ("./inputMILP/Noise/OnlyMILPData/data_n_" & ncase & "_p_" & pcase & "_" & case & ".dat");
+              display p;
+              
+              
+              #Time Calculation           
+              let time1 := _total_solve_elapsed_time;
+              solve;
+              let time2 := _total_solve_elapsed_time;
+              display theta, T, X_true, X, outliervec, Z, f;
+              display _total_solve_elapsed_time;
+              display time2 - time1;
+              print (time2 - time1) >> ("./outputMILP/OnlyMILP/Time/data_n_" & ncase & "_p_" & pcase & ".out");
+              
+              #Metric_1 based Evaluation
+              let norm_of_diff :=0;
+              let norm_theta_hat :=0;
+              let norm_theta_true :=0;
+              
+              for {i in 1..r} 
+              {
+               let norm_of_diff := norm_of_diff + (theta[i] - T[i])*(theta[i] - T[i]);
+               let norm_theta_hat := norm_theta_hat + T[i]*T[i];
+               let norm_theta_true := norm_theta_true + theta[i]*theta[i];
+              }
+              
+              let metric_1_ratio := norm_of_diff/(norm_theta_hat + norm_theta_true) ;
+              display metric_1_ratio;
+              print metric_1_ratio >> ("./outputMILP/OnlyMILP/Metric_1/data_n_" & ncase & "_p_" & pcase & ".out");
+              
+             
+              #Metric_2 based Evaluation
+              let FP :=0;
+              let FN :=0;
+              let inliers :=0;
+              
+              for {i in 1..d}
+              {
+                  if(outliervec[i] = 0) then {
+                       let inliers := inliers + 1;
+                  }
+              
+              }
+              
+              
+              let sigma[1] := 0;
+              let sigma[2] := 1e-9;
+              let sigma[3] := 1e-3;
+              let sigma[4] :=1e-1;
+              
+           
+              for { i in 1..d}
+              {
+                          
+                          #It determines false negative; inliers being treated as outliers
+                          
+                          if(outliervec[i] = 0 && Z[i] = 1) then { 
+                                 let FN :=FN+1; 
+                          }
+                          
+                          #It determines false positive; outliers beign treated as inliers..
+                          if(outliervec[i] = 1 && Z[i] = 0) then { 
+                                 let FP :=FP+1; 
+                          }      
+              
+              }
+              let ratio := (FP+FN)/inliers ;
+              display inliers, FP, FN, ratio;
+              print ratio >> ("./outputMILP/OnlyMILP/Metric_2/data_n_" & ncase & "_p_" & pcase & ".out");
+         }
+         
+      }              
+}
+
+
+
+
+

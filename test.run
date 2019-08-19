@@ -1,0 +1,13 @@
+
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 60'; #'bestobjstop 20';
+
+
+param flag;
+let flag :=max (2, 5);
+display flag;

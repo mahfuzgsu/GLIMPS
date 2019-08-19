@@ -1,0 +1,31 @@
+#RESET THE AMPL ENVIROMENT
+reset;
+
+
+option randseed 0;
+
+#LOAD THE MODEL
+model ReducedOutliersMILPmain.mod;
+
+#LOAD THE DATA
+data reducedOutliersData.dat;
+
+#DISPLAY THE PROBLEM FORMULATION
+#expand z, Constraint;
+
+#CHANGE THE SOLVER (optional)
+option solver gurobi;
+option gurobi_options 'timelim 50'; #'bestobjstop 20';
+
+#SOLVE
+#objective f1;
+solve;
+
+#SHOW RESULTS
+display _total_solve_elapsed_time;
+display theta, X_true, X, outliervec, Z, T, f;
+
+#objective f2;
+#solve;
+#display theta, X_true, X, outliers, Z2, S, f2;
+
